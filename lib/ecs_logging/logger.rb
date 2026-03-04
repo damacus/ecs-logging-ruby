@@ -4,10 +4,16 @@ require "logger"
 require "ecs_logging/formatter"
 
 module EcsLogging
-  class Logger < ::Logger
+  class Logger < (defined?(::ActiveSupport::Logger) ? ::ActiveSupport::Logger : ::Logger)
     def initialize(*args)
       super
       self.formatter = Formatter.new
+    end
+
+    # Provide a stub for silence if not already defined (e.g. non-Rails env or old ActiveSupport)
+    # This prevents crashes in Rails initialization (Fixes Issue #25)
+    def silence(*)
+      yield self
     end
 
     def add(severity, message = nil, progname = nil, include_origin: false, **extras)
