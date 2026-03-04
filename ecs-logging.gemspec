@@ -1,20 +1,3 @@
-# Licensed to Elasticsearch B.V. under one or more contributor
-# license agreements. See the NOTICE file distributed with
-# this work for additional information regarding copyright
-# ownership. Elasticsearch B.V. licenses this file to you under
-# the Apache License, Version 2.0 (the "License"); you may
-# not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#   http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an
-# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied.  See the License for the
-# specific language governing permissions and limitations
-# under the License.
-
 # frozen_string_literal: true
 
 require_relative 'lib/ecs_logging/version'
@@ -22,12 +5,12 @@ require_relative 'lib/ecs_logging/version'
 Gem::Specification.new do |spec|
   spec.name          = "ecs-logging"
   spec.version       = EcsLogging::VERSION
-  spec.authors       = ["Mikkel Malmberg"]
-  spec.email         = ["mikkel@elastic.co"]
+  spec.authors       = ["Dan Webb"]
+  spec.email         = ["dan.webb@damacus.io"]
 
-  spec.summary       = %q{Write a short summary, because RubyGems requires one.}
-  spec.description   = %q{Write a longer description or delete this line.}
-  spec.homepage      = "https://github.com/elastic/ecs-logging-ruby"
+  spec.summary       = %q{A Ruby logging library for the Elastic Common Schema (ECS).}
+  spec.description   = %q{Write logs in a structured JSON format that complies with the Elastic Common Schema (ECS).}
+  spec.homepage      = "https://github.com/damacus/ecs-logging-ruby"
   spec.license       = 'Apache-2.0'
 
   spec.required_ruby_version = Gem::Requirement.new(">= 3.2.0")

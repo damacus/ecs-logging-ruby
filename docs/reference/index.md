@@ -1,17 +1,9 @@
----
-mapped_pages:
-  - https://www.elastic.co/guide/en/ecs-logging/ruby/current/intro.html
-  - https://www.elastic.co/guide/en/ecs-logging/ruby/current/index.html
----
-
-# ECS Logging Ruby [intro]
+# ECS Logging Ruby
 
 ECS loggers are formatter/encoder plugins for your favorite logging libraries. They make it easy to format your logs into ECS-compatible JSON.
 
-::::{tip}
-Want to learn more about ECS, ECS logging, and other available language plugins? See the [ECS logging guide](ecs-logging://reference/intro.md).
-::::
+!!! tip
+    Want to learn more about ECS, ECS logging, and other available language plugins? See the [official ECS logging guide](https://www.elastic.co/guide/en/ecs-logging/intro/current/intro.html).
 
-
-Ready to jump into `ecs-logging-ruby`? [Get started](/reference/setup.md).
+Ready to jump into `ecs-logging-ruby`? [Get started](setup.md).
 
