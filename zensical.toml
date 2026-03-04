@@ -1,0 +1,31 @@
+[project]
+site_name = "ECS Logging Ruby"
+site_url = "https://github.com/damacus/ecs-logging-ruby"
+site_description = "A Ruby logging library for the Elastic Common Schema (ECS)."
+site_author = "Dan Webb"
+repo_url = "https://github.com/damacus/ecs-logging-ruby"
+repo_name = "damacus/ecs-logging-ruby"
+docs_dir = "docs/reference"
+
+[[project.nav]]
+Home = "index.md"
+Setup = "setup.md"
+
+[project.theme]
+name = "zensical"
+variant = "modern"
+features = [
+    "content.tooltips",
+    "navigation.tabs",
+    "search.suggest"
+]
+
+[project.markdown_extensions.pymdownx.highlight]
+anchor_linenums = true
+line_spans = "__span"
+pygments_lang_class = true
+
+[project.markdown_extensions.pymdownx.superfences]
+[project.markdown_extensions.admonition]
+[project.markdown_extensions.attr_list]
+[project.markdown_extensions.md_in_html]
