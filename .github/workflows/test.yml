@@ -35,18 +35,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.3'
-      - uses: elastic/apm-pipeline-library/.github/actions/docker-layer-caching@current
-        with:
-          # {hash} must be included according to docs. https://github.com/marketplace/actions/docker-layer-caching
-          # The key must be unique to every distinct matrix job
-          key: v2-docker-cache-${{ matrix.ruby-image }}-${{ matrix.framework }}-${{ github.workflow }}-{hash}
-          restore-keys: |
-            v2-docker-cache-${{ matrix.ruby-image }}-${{ matrix.framework }}-${{ github.workflow }}-
-      - name: Test ${{ matrix.ruby-image }}, ${{ matrix.framework }}
-        env:
-          RUBY_VERSION: ${{ matrix.ruby-image }}
-        run: bin/dev --image=${{ matrix.ruby-image }} --frameworks=${{ matrix.framework }}
+          ruby-version: ${{ startsWith(matrix.ruby-image, 'ruby:') && split(matrix.ruby-image, ':')[1] || matrix.ruby-image }}
+          bundler-cache: true
+      - name: Run tests
+        run: bundle exec rspec
       - name: prepare artifact name # because it cannot have colons ":"
         id: artifact_name
         run: |
