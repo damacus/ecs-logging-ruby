@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.0.0 (2026-03-05)
+
+
+### Features
+
+* optimize logging hot-path and add release automation ([7b61f20](https://github.com/damacus/ecs-logging-ruby/commit/7b61f20b6c2d404e481553df9b9540be30b1ac2b))
+
 ## 1.0.0 (2026-03-04)
 
 
