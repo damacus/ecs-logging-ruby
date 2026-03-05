@@ -32,13 +32,22 @@ jobs:
           - 'sinatra-2.0'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
+
+      - name: Resolve Ruby version
+        id: ruby_version
+        run: echo "value=${RUBY_IMAGE#ruby:}" >> "${GITHUB_OUTPUT}"
+        env:
+          RUBY_IMAGE: ${{ matrix.ruby-image }}
+
       - uses: ruby/setup-ruby@v1
         with:
-          ruby-version: ${{ startsWith(matrix.ruby-image, 'ruby:') && split(matrix.ruby-image, ':')[1] || matrix.ruby-image }}
+          ruby-version: ${{ steps.ruby_version.outputs.value }}
           bundler-cache: true
+
       - name: Run tests
         run: bundle exec rspec
+
       - name: prepare artifact name # because it cannot have colons ":"
         id: artifact_name
         run: |
@@ -46,7 +55,8 @@ jobs:
         env:
           RUBY_IMAGE: ${{ matrix.ruby-image }}
           FRAMEWORK: ${{ matrix.framework }}
-      - uses: actions/upload-artifact@v7
+
+      - uses: actions/upload-artifact@v4
         if: success() || failure()
         with:
           name: ${{ steps.artifact_name.outputs.artifact_name }}

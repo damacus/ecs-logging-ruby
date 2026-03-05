@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
 
 permissions:
   contents: write
@@ -11,27 +16,67 @@ permissions:
   packages: write
 
 jobs:
-  release-please:
+  release-pr:
+    if: ${{ github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        with:
+          release-type: ruby
+          skip-github-release: true
+
+  release-tag:
+    if: "${{ github.event_name == 'pull_request' && github.event.pull_request.merged == true && startsWith(github.event.pull_request.title, 'chore(main): release') }}"
     runs-on: ubuntu-latest
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
     steps:
-      - uses: google-github-actions/release-please-action@v4
-        id: release
+      - id: release
+        uses: googleapis/release-please-action@v4
         with:
           release-type: ruby
-          package-name: ecs-logging
+          skip-github-pull-request: true
 
   publish:
     runs-on: ubuntu-latest
-    needs: release-please
-    if: ${{ needs.release-please.outputs.release_created }}
+    needs: release-tag
+    if: ${{ needs.release-tag.outputs.release_created == 'true' }}
     steps:
-      - uses: actions/checkout@v6
-      - name: Build and publish to multiple registries
-        uses: actionshub/publish-ruby-gem@main
+      - uses: actions/checkout@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          rubygems_token: ${{ secrets.RUBYGEMS_API_KEY }}
-          gemcoop_token: ${{ secrets.GEMCOOP_API_KEY }}
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+
+      - name: Build gem
+        run: gem build ecs-logging.gemspec
+
+      - name: Publish to RubyGems
+        if: ${{ secrets.RUBYGEMS_API_KEY != '' || secrets.RUBY_GEMS_API_KEY != '' }}
+        run: |
+          mkdir -p ~/.gem
+          chmod 0700 ~/.gem
+          printf -- "---\n:rubygems_api_key: %s\n" "${GEM_HOST_API_KEY}" > ~/.gem/credentials
+          chmod 0600 ~/.gem/credentials
+          gem push ecs-logging-*.gem
+        env:
+          GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY || secrets.RUBY_GEMS_API_KEY }}
+
+      - name: Publish to GitHub Packages
+        env:
+          GEM_HOST_API_KEY: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_USER: ${{ github.repository_owner }}
+        run: gem push ecs-logging-*.gem --host "https://rubygems.pkg.github.com/${GITHUB_USER}"
+
+      - name: Publish to gem.coop
+        if: ${{ secrets.GEMCOOP_API_KEY != '' || secrets.GEM_COOP_API_KEY != '' }}
+        run: gem push ecs-logging-*.gem --host "https://gem.coop"
+        env:
+          GEM_HOST_API_KEY: ${{ secrets.GEMCOOP_API_KEY || secrets.GEM_COOP_API_KEY }}
+
+      - name: External registries skipped
+        if: ${{ (secrets.RUBYGEMS_API_KEY == '' && secrets.RUBY_GEMS_API_KEY == '') && (secrets.GEMCOOP_API_KEY == '' && secrets.GEM_COOP_API_KEY == '') }}
+        run: echo "No RubyGems or gem.coop API key configured; skipping external gem publish."
