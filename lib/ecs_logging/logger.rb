@@ -1,31 +1,19 @@
-# Licensed to Elasticsearch B.V. under one or more contributor
-# license agreements. See the NOTICE file distributed with
-# this work for additional information regarding copyright
-# ownership. Elasticsearch B.V. licenses this file to you under
-# the Apache License, Version 2.0 (the "License"); you may
-# not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#   http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an
-# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied.  See the License for the
-# specific language governing permissions and limitations
-# under the License.
-
 # frozen_string_literal: true
 
 require "logger"
 require "ecs_logging/formatter"
-require 'pp'
 
 module EcsLogging
-  class Logger < ::Logger
+  class Logger < (defined?(::ActiveSupport::Logger) ? ::ActiveSupport::Logger : ::Logger)
     def initialize(*args)
       super
       self.formatter = Formatter.new
+    end
+
+    # Provide a stub for silence if not already defined (e.g. non-Rails env or old ActiveSupport)
+    # This prevents crashes in Rails initialization (Fixes Issue #25)
+    def silence(*)
+      yield self
     end
 
     def add(severity, message = nil, progname = nil, include_origin: false, **extras)
@@ -44,9 +32,13 @@ module EcsLogging
       end
 
       if apm_agent_present_and_running?
-        extras[:"transaction.id"] = ElasticAPM.current_transaction&.id
-        extras[:"trace.id"] = ElasticAPM.current_transaction&.trace_id
-        extras[:"span.id"] = ElasticAPM.current_span&.id
+        if txn = ElasticAPM.current_transaction
+          extras[:"transaction.id"] = txn.id
+          extras[:"trace.id"] = txn.trace_id
+        end
+        if span = ElasticAPM.current_span
+          extras[:"span.id"] = span.id
+        end
       end
 
       @logdev.write(
@@ -55,7 +47,7 @@ module EcsLogging
           Time.now,
           progname,
           message,
-          **extras
+          extras
         )
       )
 
@@ -64,38 +56,35 @@ module EcsLogging
 
     %w[unknown fatal error warn info debug].each do |severity|
       define_method(severity) do |progname = nil, include_origin: false, **extras, &block|
-        if include_origin && origin = origin_from_caller(caller)
+        if include_origin && origin = origin_from_caller(caller_locations(1, 1))
           extras[:"log.origin"] = origin
         end
 
         name = severity.upcase.to_sym
         cnst = self.class.const_get(name)
-        add(cnst, nil, progname, **extras, &block)
+        add(cnst, nil, progname, include_origin: include_origin, **extras, &block)
       end
     end
 
     private
 
-    RUBY_FORMAT = /^(.+?):(\d+)(?::in `(.+?)')?$/.freeze
-
-    def origin_from_caller(stack)
-      return unless (ruby_match = stack.first.match(RUBY_FORMAT))
-
-      _, file, number, method = ruby_match.to_a
+    def origin_from_caller(locations)
+      return unless location = locations&.first
 
       {
-        'file.name': File.basename(file),
-        'file.line': number.to_i,
-        function: method
+        'file.name': File.basename(location.path),
+        'file.line': location.lineno,
+        function: location.label
       }
     end
 
-    def format_message(severity, datetime, progname, msg, **extras)
-      formatter.call(severity, datetime, progname, msg, **extras)
+    def format_message(severity, datetime, progname, msg, extras = nil)
+      formatter.call(severity, datetime, progname, msg, extras)
     end
 
     def apm_agent_present_and_running?
-      return false unless defined?(::ElasticAPM)
+      @apm_present ||= defined?(::ElasticAPM)
+      return false unless @apm_present
 
       ElasticAPM.running?
     end
